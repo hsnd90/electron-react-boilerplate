@@ -1,216 +1,196 @@
-/* eslint-disable react/no-unused-state */
-/* eslint-disable @typescript-eslint/naming-convention */
-/* eslint-disable react/destructuring-assignment */
-import { Component } from 'react';
-import { collection, setDoc, addDoc } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './PatientForm.css';
 import { Card, Form, Row, Col, Button, Container } from 'react-bootstrap';
+import { useFormik } from 'formik';
+import * as yup from 'yup';
+import { useState } from 'react';
 import db from '../../firebase';
 
-// eslint-disable-next-line react/prefer-stateless-function
-export default class PatientForm extends Component {
-  patientsCollectionRef = collection(db, 'patients');
+export default function PatientForm(props) {
+  const [Patient, setPatient] = useState({});
+  const patientsCollectionRef = collection(db, 'patients');
 
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      Patient: {},
-    };
-  }
-
-  componentDidMount() {
-    this.clearControls();
-  }
-
-  clearControls = () => {
-    this.setState({
-      Patient: {
-        Age: 0,
-        Birthday: new Date().toLocaleString(),
-        FullName: '',
-        Gender: '0',
-        IdentityNo: '',
-        PhoneNumber: '',
-        ProtocolNo: '',
-        RecordDate: new Date().toLocaleString(),
-        ConstipationReports: [],
-      },
-    });
+  const createDocument = async (patient: unknown) => {
+    await addDoc(patientsCollectionRef, patient);
   };
-
-  createDocument = async () => {
-    await addDoc(this.patientsCollectionRef, this.state.Patient);
-    this.clearControls();
+  console.log(props.patient);
+  // eslint-disable-next-line react/destructuring-assignment
+  const initialValues = props.patient || {
+    FullName: '',
+    Age: 0,
+    ProtocolNo: '',
+    Gender: '',
+    IdentityNo: '',
+    PhoneNumber: 0,
+    Birthday: new Date(),
+    RecordDate: new Date(),
   };
+  console.log(initialValues);
 
-  handleSubmit = (event) => {
-    event.preventDefault();
-    this.createDocument();
-  };
+  const formik = useFormik({
+    initialValues,
+    onSubmit: async (values, { resetForm }) => {
+      if (!formik.errors) {
+        await createDocument(values);
+        resetForm();
+      }
+    },
+    enableReinitialize: true,
+    validationSchema: yup.object({
+      FullName: yup.string().required('Hastanın adı soyadı alanı zorunludur.'),
+    }),
+  });
 
-  handleInputChange = (event: any) => {
-    event.preventDefault();
-    this.setState({
-      Patient: {
-        ...this.state.Patient,
-        [event.target.name]: event.target.value,
-      },
-    });
-  };
+  return (
+    <Container>
+      <Form onSubmit={formik.handleSubmit}>
+        <Card className="card p-3 m-5">
+          <Card.Title>Hasta Bilgileri</Card.Title>
+          <Card.Body className="mt-2">
+            {/* Ad Soyad - Yaş */}
+            <Form.Group>
+              <Row className="align-items-center">
+                <Col md="2">
+                  <Form.Label>Hastanın Adı Soyadı</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    className="text-input"
+                    type="text"
+                    name="FullName"
+                    onChange={formik.handleChange}
+                    value={formik.values.FullName}
+                  />
+                </Col>
 
-  render() {
-    return (
-      <Container>
-        <Form onSubmit={this.handleSubmit}>
-          <Card className="card p-3 m-5">
-            <Card.Title>Hasta Bilgileri</Card.Title>
-            <Card.Body className="mt-2">
-              {/* Ad Soyad - Yaş */}
-              <Form.Group>
-                <Row className="align-items-center">
-                  <Col md="2">
-                    <Form.Label>Hastanın Adı Soyadı</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.FullName}
-                      className="text-input"
-                      type="text"
-                      name="FullName"
-                      onChange={this.handleInputChange}
-                    />
-                  </Col>
-
-                  <Col md="2">
-                    <Form.Label>Yaş</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.Age}
-                      className="text-input"
-                      type="number"
-                      name="Age"
-                      onChange={this.handleInputChange}
-                    />
-                  </Col>
-                </Row>
-              </Form.Group>
-              {/* Protokol No - Cinsiyet */}
-              <Form.Group>
-                <Row className="align-items-center">
-                  <Col md="2">
-                    <Form.Label>Protokol Numarası</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.ProtocolNo}
-                      className="text-input"
-                      type="text"
-                      name="ProtocolNo"
-                      onChange={this.handleInputChange}
-                    />
-                  </Col>
-
-                  <Col md="2">
-                    <Form.Label>Cinsiyet</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Select
-                      value={this.state.Patient.Gender}
-                      name="Gender"
-                      className="text-input"
-                      onChange={this.handleInputChange}
-                      defaultValue="0"
-                    >
-                      <option hidden value="0">
-                        Seçiniz
-                      </option>
-                      <option value="Erkek">Erkek</option>
-                      <option value="Kadın">Kadın</option>
-                    </Form.Select>
-                  </Col>
-                </Row>
-              </Form.Group>
-              {/* TC Kimlik No - Telefon */}
-              <Form.Group>
-                <Row className="align-items-center">
-                  <Col md="2">
-                    <Form.Label>T.C. Kimlik Numarası</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.IdentityNo}
-                      onChange={this.handleInputChange}
-                      name="IdentityNo"
-                      className="text-input"
-                      type="number"
-                    />
-                  </Col>
-
-                  <Col md="2">
-                    <Form.Label>Telefon</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.PhoneNumber}
-                      onChange={this.handleInputChange}
-                      name="PhoneNumber"
-                      className="text-input"
-                      type="number"
-                    />
-                  </Col>
-                </Row>
-              </Form.Group>
-              {/* Doğum Tarihi - Tarih */}
-              <Form.Group>
-                <Row className="align-items-center">
-                  <Col md="2">
-                    <Form.Label>Doğum Tarihi</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.Birthday}
-                      onChange={this.handleInputChange}
-                      name="Birthday"
-                      className="text-input"
-                      type="date"
-                    />
-                  </Col>
-
-                  <Col md="2">
-                    <Form.Label>Tarih</Form.Label>
-                  </Col>
-                  <Col md="4">
-                    <Form.Control
-                      value={this.state.Patient.RecordDate}
-                      onChange={this.handleInputChange}
-                      name="RecordDate"
-                      className="text-input"
-                      type="date"
-                    />
-                  </Col>
-                </Row>
-              </Form.Group>
-              <Row>
-                <Col md={{ offset: 9 }}>
-                  <Button
-                    type="submit"
-                    style={{
-                      marginRight: 0,
-                      marginLeft: 'auto',
-                      marginTop: 20,
-                    }}
-                    variant="success"
-                  >
-                    Hasta Kaydet
-                  </Button>
+                <Col md="2">
+                  <Form.Label>Yaş</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    className="text-input"
+                    type="number"
+                    name="Age"
+                    onChange={formik.handleChange}
+                    value={formik.values.Age}
+                  />
                 </Col>
               </Row>
-            </Card.Body>
-          </Card>
-        </Form>
-      </Container>
-    );
-  }
+            </Form.Group>
+            {/* Protokol No - Cinsiyet */}
+            <Form.Group>
+              <Row className="align-items-center">
+                <Col md="2">
+                  <Form.Label>Protokol Numarası</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    className="text-input"
+                    type="text"
+                    name="ProtocolNo"
+                    onChange={formik.handleChange}
+                    value={formik.values.ProtocolNo}
+                  />
+                </Col>
+
+                <Col md="2">
+                  <Form.Label>Cinsiyet</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Select
+                    name="Gender"
+                    className="text-input"
+                    onChange={formik.handleChange}
+                    value={formik.values.Gender}
+                  >
+                    <option value="" hidden selected>
+                      Seçiniz
+                    </option>
+                    <option value="Erkek">Erkek</option>
+                    <option value="Kadın">Kadın</option>
+                  </Form.Select>
+                </Col>
+              </Row>
+            </Form.Group>
+            {/* TC Kimlik No - Telefon */}
+            <Form.Group>
+              <Row className="align-items-center">
+                <Col md="2">
+                  <Form.Label>T.C. Kimlik Numarası</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    name="IdentityNo"
+                    className="text-input"
+                    type="number"
+                    onChange={formik.handleChange}
+                    value={formik.values.IdentityNo}
+                  />
+                </Col>
+
+                <Col md="2">
+                  <Form.Label>Telefon</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    name="PhoneNumber"
+                    className="text-input"
+                    type="number"
+                    onChange={formik.handleChange}
+                    value={formik.values.PhoneNumber}
+                  />
+                </Col>
+              </Row>
+            </Form.Group>
+            {/* Doğum Tarihi - Tarih */}
+            <Form.Group>
+              <Row className="align-items-center">
+                <Col md="2">
+                  <Form.Label>Doğum Tarihi</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    name="Birthday"
+                    className="text-input"
+                    type="date"
+                    onChange={formik.handleChange}
+                    value={formik.values.Birthday}
+                  />
+                </Col>
+
+                <Col md="2">
+                  <Form.Label>Tarih</Form.Label>
+                </Col>
+                <Col md="4">
+                  <Form.Control
+                    name="RecordDate"
+                    className="text-input"
+                    type="date"
+                    onChange={formik.handleChange}
+                    value={formik.values.RecordDate}
+                  />
+                </Col>
+              </Row>
+            </Form.Group>
+            <Row>
+              <Col md={{ offset: 9 }}>
+                <Button
+                  type="submit"
+                  style={{
+                    marginRight: 0,
+                    marginLeft: 'auto',
+                    marginTop: 20,
+                  }}
+                  variant="success"
+                >
+                  Hasta Kaydet
+                </Button>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </Form>
+    </Container>
+  );
 }

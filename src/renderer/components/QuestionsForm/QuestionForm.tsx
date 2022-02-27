@@ -24,7 +24,7 @@ export default class QuestionForm extends Component {
 
   constructor(props: any) {
     super(props);
-    this.PatientId = this.props.PatientId;
+    this.PatientId = this.props.id;
     console.log('PatientId', this.PatientId);
     this.state = {
       Form: { FormName: 'Kabızlık Form' },
