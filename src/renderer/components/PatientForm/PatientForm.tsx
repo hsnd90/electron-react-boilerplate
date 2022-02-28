@@ -14,7 +14,6 @@ export default function PatientForm(props) {
   const createDocument = async (patient: unknown) => {
     await addDoc(patientsCollectionRef, patient);
   };
-  console.log(props.patient);
   // eslint-disable-next-line react/destructuring-assignment
   const initialValues = props.patient || {
     FullName: '',
@@ -26,7 +25,6 @@ export default function PatientForm(props) {
     Birthday: new Date(),
     RecordDate: new Date(),
   };
-  console.log(initialValues);
 
   const formik = useFormik({
     initialValues,

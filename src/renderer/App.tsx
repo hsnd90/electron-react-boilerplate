@@ -1,28 +1,16 @@
 /* eslint-disable react/button-has-type */
 import './App.css';
-import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import QuestionForm from './components/QuestionsForm/QuestionForm';
+import { Link, Outlet } from 'react-router-dom';
+import KabizlikInkotinansForm from './components/Forms/KabizlikInkotinans/KabizlikInkotinansForm';
 import PatientForm from './components/PatientForm/PatientForm';
 import PatientList from './components/PatientList/PatientList';
+import NavbarForm from './components/Navbar/NavbarForm';
 
 export default function App() {
-  const patient = {
-    PatientId: 'QydVs8AJKhwF9CrjTaCC',
-    FullName: 'Hasan Ada',
-    Age: 32,
-    ProtocolNo: 'A1234',
-    Gender: 'Erkek',
-    IdentityNo: '1234856',
-    PhoneNumber: 123123123,
-    Birthday: new Date(),
-    RecordDate: new Date(),
-  };
   return (
-    <div>
-      {/* <PatientForm />
-      <PatientList /> */}
-      {/* <QuestionForm PatientId={'R7gWIpSv4Zi3x3SaZ0Bh'} /> */}
-      <QuestionForm id={patient.PatientId} />
+    <div className="App">
+      <NavbarForm />
+      <Outlet />
     </div>
   );
 }
