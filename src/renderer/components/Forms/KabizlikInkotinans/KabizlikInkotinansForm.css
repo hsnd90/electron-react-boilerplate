@@ -1,4 +1,4 @@
-.text-input {
+.card .text-input {
   background-color: transparent !important;
   height: 30px !important;
   width: auto !important;
@@ -9,7 +9,7 @@
   display: inline-block !important;
 }
 
-.image {
+.card  .image {
   padding: 20px !important;
 }
 

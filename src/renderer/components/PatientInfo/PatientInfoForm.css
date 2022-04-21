@@ -1,0 +1,16 @@
+input {
+  color: rgb(255, 255, 255) !important;
+}
+
+.patient-info-form label {
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.patient-info-form {
+  background-color: #6b7183ad !important;
+  border-radius: 20px !important;
+  margin-bottom: 10px !important;
+  margin-top: 10px !important;
+  font-size: 18px;
+}

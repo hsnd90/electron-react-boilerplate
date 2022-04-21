@@ -6,20 +6,17 @@ export default function NavbarForm() {
   return (
     <Navbar bg="light" variant="light">
       <Container>
-        <Navbar.Brand href="#home">Navbar</Navbar.Brand>
-        <Nav className="me-auto">
-          <Nav.Link>
-            <Link to="/">Anasayfa</Link>
-          </Nav.Link>
-          <Nav.Link>
-            <Link to="/patients">Hasta Listesi</Link>
-          </Nav.Link>
-          <Nav.Link>
-            <Link to="/forms">Form Listesi</Link>
-          </Nav.Link>
-          <Nav.Link>
-            <Link to="/form/barsak-yonetim">Form Listesi</Link>
-          </Nav.Link>
+        <Nav>
+          <Link
+            className="mx-2"
+            style={{ textDecoration: 'none' }}
+            to="/new-patient"
+          >
+            Hasta Kayıt
+          </Link>
+          <Link className="mx-2" style={{ textDecoration: 'none' }} to="/patients">
+            Hasta Listesi
+          </Link>
         </Nav>
       </Container>
     </Navbar>

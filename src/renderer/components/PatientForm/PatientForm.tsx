@@ -3,47 +3,45 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './PatientForm.css';
 import { Card, Form, Row, Col, Button, Container } from 'react-bootstrap';
 import { useFormik } from 'formik';
-import * as yup from 'yup';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import patient from '../FormGroups/patient';
 import db from '../../firebase';
 
-export default function PatientForm(props) {
+export default function PatientForm() {
   const [Patient, setPatient] = useState({});
   const patientsCollectionRef = collection(db, 'patients');
+  const [showKabizlikForm, setShowKabizlikForm] = useState(false);
+  let navigate = useNavigate();
 
-  const createDocument = async (patient: unknown) => {
-    await addDoc(patientsCollectionRef, patient);
-  };
   // eslint-disable-next-line react/destructuring-assignment
-  const initialValues = props.patient || {
-    FullName: '',
-    Age: 0,
-    ProtocolNo: '',
-    Gender: '',
-    IdentityNo: '',
-    PhoneNumber: 0,
-    Birthday: new Date(),
-    RecordDate: new Date(),
+  let initialValues = patient;
+
+  const createDocument = async (form: unknown) => {
+    await addDoc(patientsCollectionRef, form);
   };
 
   const formik = useFormik({
     initialValues,
     onSubmit: async (values, { resetForm }) => {
-      if (!formik.errors) {
-        await createDocument(values);
-        resetForm();
-      }
+      await createDocument(values);
+      setPatient(values);
+      resetForm();
+      navigate('/form/kabizlik-form', {
+        replace: true,
+        state: { formType: 'new', ...values },
+      });
     },
     enableReinitialize: true,
-    validationSchema: yup.object({
-      FullName: yup.string().required('Hastanın adı soyadı alanı zorunludur.'),
-    }),
+    // validationSchema: yup.object({
+    //   FullName: yup.string().required('Hastanın adı soyadı alanı zorunludur.'),
+    // }),
   });
 
   return (
-    <Container>
+    <Container fluid>
       <Form onSubmit={formik.handleSubmit}>
-        <Card className="card p-3 m-5">
+        <Card className="card p-3 m-1">
           <Card.Title>Hasta Bilgileri</Card.Title>
           <Card.Body className="mt-2">
             {/* Ad Soyad - Yaş */}
@@ -101,8 +99,9 @@ export default function PatientForm(props) {
                     className="text-input"
                     onChange={formik.handleChange}
                     value={formik.values.Gender}
+                    defaultValue="0"
                   >
-                    <option value="" hidden selected>
+                    <option value="0" hidden>
                       Seçiniz
                     </option>
                     <option value="Erkek">Erkek</option>
@@ -162,11 +161,11 @@ export default function PatientForm(props) {
                 </Col>
                 <Col md="4">
                   <Form.Control
-                    name="RecordDate"
+                    name="RegisterDate"
                     className="text-input"
                     type="date"
                     onChange={formik.handleChange}
-                    value={formik.values.RecordDate}
+                    value={formik.values.RegisterDate}
                   />
                 </Col>
               </Row>
@@ -189,6 +188,7 @@ export default function PatientForm(props) {
           </Card.Body>
         </Card>
       </Form>
+      {/* {showKabizlikForm && <KabizlikInkotinansForm patient={Patient} />} */}
     </Container>
   );
 }

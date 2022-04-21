@@ -5,11 +5,13 @@ import KabizlikInkotinansForm from './components/Forms/KabizlikInkotinans/Kabizl
 import PatientForm from './components/PatientForm/PatientForm';
 import PatientList from './components/PatientList/PatientList';
 import NavbarForm from './components/Navbar/NavbarForm';
+import LaksatifGunluk from './components/Forms/LaksatifGunluk/LaksatifGunluk';
+import FekalInkotinans from './components/Forms/FekalInkotinans/FekalInkotinans';
 
 export default function App() {
   return (
     <div className="App">
-      <NavbarForm />
+      {/* <FekalInkotinans /> */}
       <Outlet />
     </div>
   );

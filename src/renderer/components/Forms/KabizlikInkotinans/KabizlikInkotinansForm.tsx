@@ -1,101 +1,96 @@
-import React, { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
+import { useState } from 'react';
+import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import {
   Container,
   Form,
   Row,
   Col,
-  Image,
   InputGroup,
   Card,
   Button,
 } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './KabizlikInkotinansForm.css';
-import { useFormik, Field } from 'formik';
-import * as yup from 'yup';
+import { useFormik } from 'formik';
+import { Dialog } from 'primereact/dialog';
+import { useLocation } from 'react-router-dom';
+import ButtonBar from 'renderer/components/ButtonBar/ButtonBar';
+import PatientInfoForm from '../../PatientInfo/PatientInfoForm';
+import KabizlikFormGroup from '../../FormGroups/kabizlik';
 import db from '../../../firebase';
 
-export default function KabizlikInkotinansForm(props) {
-  const [KabizlikForm, setKabizlikForm] = useState({});
+export default function KabizlikInkotinansForm() {
   const kabizlikFormCollectionRef = collection(db, 'forms');
+  const [visible, setVisible] = useState(false);
+  const [visible2, setVisible2] = useState(false);
+  const { state } = useLocation();
+  const [selectedPatient] = useState(state);
 
-  const initialValues = props.form || {
-    FormName: 'Kabızlık Form',
-    q1: '', // 1. Çocuğunuz kaç günde bir büyük tuvaletini yapıyor?
-    q2: 'Evet', // 2. Büyük tuvaletini yapması için uyarı veya lavman yapmanız gerekiyor mu?
-    'q3-1': '', // - Haftada iki ya da daha az dışkılama
-    'q3-2': '', // - Aşırı dışkı birikmesi öyküsü
-    'q3-3': '', // - Ağrılı ve sert dışkılama
-    'q3-4': '', // - Büyük çaplı dışkılama
-    'q3-5': '', // - Rektumda büyük dışkı kitlesinin bulunması
-    'q3-6': '', // - Haftada en az bir kere dışkı kaçırma öyküsü
-    'q3-7': '', // - Tuvaleti bile tıkayabileGek kadar geniş çaplı dışkılama öyküsü
-    'q3-8': '', // - Kabızlık Skoru (Roma IV)
-    q4: '',
-    'q4-age': '',
-    q5: '',
-    q6: '',
-    'q6-other': '',
-    q7: '',
-    q8: '',
-    q9: '',
-    q10: '',
-    q11: '',
-    'q11-1': '',
-    q12: '',
-    q13: '',
-    'q13-1': '',
-    q14: '',
-    q15: '',
-    'q16-laksatif': '',
-    'q16-laksatif-1': '',
-    'q16-laksatif-1-duration': '',
-    'q16-lavman': '',
-    'q16-lavman-1': '',
-    'q16-treatment': '',
-    q17: '',
-    q18: '',
-    q19: '',
-    q20: '',
-    q21: '',
-    q22: '',
-    'q22-1': '',
-    'q22-comment': '',
-    'q23-length': '',
-    'q23-length-persentil': '',
-    'q23-weight': '',
-    'q23-weight-persentil': '',
+  const onHide = () => {
+    setVisible(!visible);
   };
+  const onHide2 = () => {
+    setVisible2(!visible2);
+  };
+
+  let initialValues = KabizlikFormGroup;
+
+  if (selectedPatient.formType === 'new') {
+    initialValues.FormInsertDate = new Date().toLocaleString();
+    initialValues = { ...initialValues, ...selectedPatient };
+  } else {
+    initialValues = { ...initialValues, ...selectedPatient };
+    initialValues.FormUpdateDate = new Date().toLocaleString();
+  }
 
   const createDocument = async (form: unknown) => {
     await addDoc(kabizlikFormCollectionRef, form);
   };
 
+  const updateDocument = async (form: any) => {
+    const updatedDoc = doc(db, 'forms', form.FormId);
+    await setDoc(updatedDoc, form);
+  };
+
   const formik = useFormik({
     initialValues,
     onSubmit: async (values, { resetForm }) => {
-      console.log(values);
-      // if (!formik.errors) {
-      //   await createDocument(values);
-      //   resetForm();
+      if (selectedPatient.formType === 'new') {
+        values.FormInsertDate = new Date().toLocaleString();
+        await createDocument(values);
+        resetForm();
+      } else {
+        values.FormUpdateDate = new Date().toLocaleString();
+        await updateDocument(values);
+      }
       // }
     },
-    enableReinitialize: true,
   });
 
   return (
     <div>
-      <Container fluid className="mt-3">
-        <Form onSubmit={formik.handleSubmit}>
-          <Button
-            style={{ position: 'fixed', bottom: 0, left: 0, zIndex: 100 }}
-            type="submit"
-            variant="success"
-          >
-            Hasta Kaydet
-          </Button>
+      <PatientInfoForm patient={selectedPatient} />
+      <Container fluid className="mt-1">
+        <Dialog
+          visible={visible}
+          style={{ width: '80vw' }}
+          modal
+          onHide={onHide}
+        >
+          {/* Bristol Dışkı Skalası Resim */}
+          <Row>
+            <img
+              className="image"
+              src={require('/assets/1.png')}
+              alt="BristolDiskiSkalasi"
+            />
+          </Row>
+        </Dialog>
+        <Form style={{ marginBottom: 100 }} onSubmit={formik.handleSubmit}>
           {/* q1  1. Çocuğunuz kaç günde bir büyük tuvaletini yapıyor?............................................................................. */}
+          <Card>
+            <Card.Title>Kabizlik Inkotinans</Card.Title>
+          </Card>
           <Card className="card">
             <Card.Body>
               <Form.Group as={Row}>
@@ -151,14 +146,62 @@ export default function KabizlikInkotinansForm(props) {
               </Form.Group>
             </Card.Body>
           </Card>
-          {/* Bristol Dışkı Skalası Resim */}
           <Row>
-            <img
-              className="image"
-              src={require('/assets/1.png')}
-              alt="BristolDiskiSkalasi"
-            />
+            <Col>
+              <Button
+                style={{ width: 250 }}
+                onClick={() => {
+                  setVisible(true);
+                }}
+              >
+                Göster / Gizle
+              </Button>
+            </Col>
           </Row>
+          <Card className="card">
+            <Card.Body>
+              <Form.Group className="align-items-center">
+                <Row>
+                  <Col md="6">
+                    <Form.Label>Bristol Dışkı Değeri</Form.Label>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="auto">
+                    <Form.Select
+                      name="bristol-deger"
+                      onChange={formik.handleChange}
+                      value={formik.values['bristol-deger']}
+                      defaultValue="0"
+                    >
+                      <option value={0}>Seçiniz</option>
+                      <option name="bristol-deger" value={1}>
+                        Tip 1 - Birbirinden ayrı topaklar
+                      </option>
+                      <option value={2}>
+                        Tip 2 - Boğumlu , sert , sosis gibi
+                      </option>
+                      <option value={3}>
+                        Tip 3 - Sosi gibi, üzerinde çatlaklar var
+                      </option>
+                      <option value={4}>
+                        Tip 4 - Yumuşak , düzgün , sosis gibi
+                      </option>
+                      <option value={5}>
+                        Tip 5 - Birbirinden ayrı yumuşak parçalar
+                      </option>
+                      <option value={6}>
+                        Tip 6 - Pürtüklü kenarlı, lapa gibi
+                      </option>
+                      <option value={7}>
+                        Tip 7 - Katı parça içermeyen, sıvı
+                      </option>
+                    </Form.Select>
+                  </Col>
+                </Row>
+              </Form.Group>
+            </Card.Body>
+          </Card>
           {/* q3 3. Kabızlık Tanı Kriterleri (Roma IV) */}
           <Card className="card">
             <Card.Body>
@@ -429,25 +472,10 @@ export default function KabizlikInkotinansForm(props) {
                     type="text"
                   />
                   <InputGroup.Text className="input-group-text">
-                    / {4 > formik.values['q3-8'] ? 5 : 7}
+                    / {+formik.values['q3-8'] < 4 ? 5 : 7}
                   </InputGroup.Text>
                 </InputGroup>
               </Row>
-              {/* >4 Yaş */}
-              {/* <Row>
-                <InputGroup>
-                  <InputGroup.Text>&gt; 4 Yaş:</InputGroup.Text>
-                  <Form.Control
-                    onChange={formik.handleChange}
-                    value={formik.values['q3-8']}
-                    className="text-input"
-                    style={{ maxWidth: 100 }}
-                    name="q3-8"
-                    type="text"
-                  />
-                  <InputGroup.Text>/ 7</InputGroup.Text>
-                </InputGroup>
-              </Row> */}
             </Card.Body>
           </Card>
           {/* q4 4. Kabızlık kaç yaşında başladı */}
@@ -460,7 +488,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="4" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q4'] === 'Doğduğundan Beri'}
+                    defaultChecked={formik.values.q4 === 'Doğduğundan Beri'}
                     value="Doğduğundan Beri"
                     className="check-input"
                     name="q4"
@@ -469,11 +497,8 @@ export default function KabizlikInkotinansForm(props) {
                     label="Doğduğundan beri"
                   />
                   <Form.Check
-                    onChange={(e) => {
-                      formik.handleChange(e);
-                      console.log(formik.values.q4);
-                    }}
-                    defaultChecked={formik.values['q4'] === 'Yaşından Beri'}
+                    onChange={formik.handleChange}
+                    defaultChecked={formik.values.q4 === 'Yaşından Beri'}
                     value="Yaşından Beri"
                     className="check-input"
                     name="q4"
@@ -483,7 +508,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                 </Col>
                 <Col>
-                  {formik.values['q4'] === 'Yaşından Beri' && (
+                  {formik.values.q4 === 'Yaşından Beri' && (
                     <InputGroup>
                       <Form.Control
                         onChange={formik.handleChange}
@@ -512,7 +537,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Control
                     onChange={formik.handleChange}
-                    value={formik.values['q5']}
+                    value={formik.values.q5}
                     className="text-input"
                     size="sm"
                     name="q5"
@@ -535,7 +560,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center wrap-to-right">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q6'] === 'Ek gıdaya başlama'}
+                    defaultChecked={formik.values.q6 === 'Ek gıdaya başlama'}
                     className="check-input"
                     value="Ek gıdaya başlama"
                     name="q6"
@@ -545,7 +570,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q6'] === 'Tuvalet eğitimi'}
+                    defaultChecked={formik.values.q6 === 'Tuvalet eğitimi'}
                     className="check-input"
                     name="q6"
                     inline
@@ -555,7 +580,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q6'] === 'Bilmiyorum'}
+                    defaultChecked={formik.values.q6 === 'Bilmiyorum'}
                     className="check-input"
                     name="q6"
                     inline
@@ -565,7 +590,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q6'] === 'Diğer'}
+                    defaultChecked={formik.values.q6 === 'Diğer'}
                     className="check-input"
                     name="q6"
                     inline
@@ -605,7 +630,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="6" className="wrap-to-right align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q7'] === 'Hayır'}
+                    defaultChecked={formik.values.q7 === 'Hayır'}
                     className="check-input"
                     name="q7"
                     inline
@@ -615,7 +640,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q7'] === 'Evet'}
+                    defaultChecked={formik.values.q7 === 'Evet'}
                     className="check-input"
                     name="q7"
                     inline
@@ -625,7 +650,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q7'] === 'Bilmiyorum'}
+                    defaultChecked={formik.values.q7 === 'Bilmiyorum'}
                     className="check-input"
                     name="q7"
                     inline
@@ -647,7 +672,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q8'] === 'Evet'}
+                    defaultChecked={formik.values.q8 === 'Evet'}
                     className="check-input"
                     name="q8"
                     inline
@@ -657,7 +682,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q8'] === 'Evet'}
+                    defaultChecked={formik.values.q8 === 'Evet'}
                     className="check-input"
                     name="q8"
                     inline
@@ -681,7 +706,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Control
                     onChange={formik.handleChange}
-                    value={formik.values['q9']}
+                    value={formik.values.q9}
                     className="text-input"
                     name="q9"
                     type="text"
@@ -702,7 +727,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q10'] === 'Hayır'}
+                    defaultChecked={formik.values.q10 === 'Hayır'}
                     className="check-input"
                     name="q10"
                     inline
@@ -711,7 +736,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q10'] === 'Evet'}
+                    defaultChecked={formik.values.q10 === 'Evet'}
                     className="check-input"
                     name="q10"
                     inline
@@ -734,7 +759,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="2">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q11'] === 'Hayır'}
+                    defaultChecked={formik.values.q11 === 'Hayır'}
                     name="q11"
                     inline
                     type="radio"
@@ -744,7 +769,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q11'] === 'Evet'}
+                    defaultChecked={formik.values.q11 === 'Evet'}
                     name="q11"
                     inline
                     type="radio"
@@ -797,7 +822,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q12'] === 'Hayır'}
+                    defaultChecked={formik.values.q12 === 'Hayır'}
                     className="check-input"
                     name="q12"
                     inline
@@ -807,7 +832,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q12'] === 'Evet'}
+                    defaultChecked={formik.values.q12 === 'Evet'}
                     className="check-input"
                     name="q12"
                     inline
@@ -829,7 +854,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q13'] === 'Hayır'}
+                    defaultChecked={formik.values.q13 === 'Hayır'}
                     className="check-input"
                     name="q13"
                     inline
@@ -839,7 +864,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q13'] === 'Evet'}
+                    defaultChecked={formik.values.q13 === 'Evet'}
                     className="check-input"
                     name="q13"
                     inline
@@ -897,7 +922,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q14'] === 'Hayır'}
+                    defaultChecked={formik.values.q14 === 'Hayır'}
                     className="check-input"
                     name="q14"
                     inline
@@ -907,7 +932,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q14'] === 'Evet'}
+                    defaultChecked={formik.values.q14 === 'Evet'}
                     className="check-input"
                     name="q14"
                     inline
@@ -935,7 +960,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q15'] === 'Hayır'}
+                    defaultChecked={formik.values.q15 === 'Hayır'}
                     className="check-input"
                     name="q15"
                     inline
@@ -945,7 +970,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q15'] === 'Evet'}
+                    defaultChecked={formik.values.q15 === 'Evet'}
                     className="check-input"
                     name="q15"
                     inline
@@ -997,7 +1022,7 @@ export default function KabizlikInkotinansForm(props) {
                       value="Düzenli"
                     />
                   </Col>
-                  {formik.values['q16-laksatif-1'] == 'Düzenli' && (
+                  {formik.values['q16-laksatif-1'] === 'Düzenli' && (
                     <Col md="3">
                       <InputGroup>
                         <InputGroup.Text className="input-group-text">
@@ -1114,7 +1139,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q17'] === 'Hayır'}
+                    defaultChecked={formik.values.q17 === 'Hayır'}
                     name="q17"
                     className="check-input"
                     inline
@@ -1124,7 +1149,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q17'] === 'Evet'}
+                    defaultChecked={formik.values.q17 === 'Evet'}
                     className="check-input"
                     name="q17"
                     inline
@@ -1148,7 +1173,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q18'] === 'Hayır'}
+                    defaultChecked={formik.values.q18 === 'Hayır'}
                     className="check-input"
                     name="q18"
                     inline
@@ -1158,7 +1183,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q18'] === 'Evet'}
+                    defaultChecked={formik.values.q18 === 'Evet'}
                     className="check-input"
                     name="q18"
                     inline
@@ -1180,7 +1205,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q19'] === 'Hayır'}
+                    defaultChecked={formik.values.q19 === 'Hayır'}
                     className="check-input"
                     name="q19"
                     inline
@@ -1190,7 +1215,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q19'] === 'Evet'}
+                    defaultChecked={formik.values.q19 === 'Evet'}
                     className="check-input"
                     name="q19"
                     inline
@@ -1212,7 +1237,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q20'] === 'Hayır'}
+                    defaultChecked={formik.values.q20 === 'Hayır'}
                     className="check-input"
                     name="q20"
                     inline
@@ -1222,7 +1247,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q20'] === 'Evet'}
+                    defaultChecked={formik.values.q20 === 'Evet'}
                     className="check-input"
                     name="q20"
                     inline
@@ -1246,7 +1271,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q21'] === 'Hayır'}
+                    defaultChecked={formik.values.q21 === 'Hayır'}
                     className="check-input"
                     name="q21"
                     inline
@@ -1256,7 +1281,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q21'] === 'Evet'}
+                    defaultChecked={formik.values.q21 === 'Evet'}
                     className="check-input"
                     name="q21"
                     inline
@@ -1278,7 +1303,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q22'] === 'Var'}
+                    defaultChecked={formik.values.q22 === 'Var'}
                     className="check-input"
                     name="q22"
                     inline
@@ -1288,7 +1313,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q22'] === 'Yok'}
+                    defaultChecked={formik.values.q22 === 'Yok'}
                     className="check-input"
                     name="q22"
                     inline
@@ -1430,7 +1455,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q24'] === 'Var'}
+                    defaultChecked={formik.values.q24 === 'Var'}
                     className="check-input"
                     name="q24"
                     inline
@@ -1440,7 +1465,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q24'] === 'Yok'}
+                    defaultChecked={formik.values.q24 === 'Yok'}
                     className="check-input"
                     name="q24"
                     inline
@@ -1458,7 +1483,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q25'] === 'Normal'}
+                    defaultChecked={formik.values.q25 === 'Normal'}
                     className="check-input"
                     name="q25"
                     inline
@@ -1468,17 +1493,17 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q25'] === 'Ektopik'}
+                    defaultChecked={formik.values.q25 === 'Ektopik'}
                     className="check-input"
                     name="q25"
                     inline
                     type="radio"
                     label="Ektopik"
-                    vallue="Ektopik"
+                    value="Ektopik"
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q25'] === 'ARM'}
+                    defaultChecked={formik.values.q25 === 'ARM'}
                     className="check-input"
                     name="q25"
                     inline
@@ -1496,7 +1521,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q26'] === 'Var'}
+                    defaultChecked={formik.values.q26 === 'Var'}
                     className="check-input"
                     name="q26"
                     inline
@@ -1506,7 +1531,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q26'] === 'Yok'}
+                    defaultChecked={formik.values.q26 === 'Yok'}
                     className="check-input"
                     name="q26"
                     inline
@@ -1524,7 +1549,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q27'] === 'Akut'}
+                    defaultChecked={formik.values.q27 === 'Akut'}
                     className="check-input"
                     name="q27"
                     inline
@@ -1534,7 +1559,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q27'] === 'Kronik'}
+                    defaultChecked={formik.values.q27 === 'Kronik'}
                     className="check-input"
                     name="q27"
                     inline
@@ -1552,7 +1577,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q28'] === 'Var'}
+                    defaultChecked={formik.values.q28 === 'Var'}
                     className="check-input"
                     name="q28"
                     inline
@@ -1562,7 +1587,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q28'] === 'Yok'}
+                    defaultChecked={formik.values.q28 === 'Yok'}
                     className="check-input"
                     name="q28"
                     inline
@@ -1580,7 +1605,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q29'] === 'Var'}
+                    defaultChecked={formik.values.q29 === 'Var'}
                     className="check-input"
                     name="q29"
                     inline
@@ -1590,7 +1615,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q29'] === 'Yok'}
+                    defaultChecked={formik.values.q29 === 'Yok'}
                     className="check-input"
                     name="q29"
                     inline
@@ -1608,7 +1633,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q30'] === 'Var'}
+                    defaultChecked={formik.values.q30 === 'Var'}
                     className="check-input"
                     name="q30"
                     inline
@@ -1618,7 +1643,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q30'] === 'Yok'}
+                    defaultChecked={formik.values.q30 === 'Yok'}
                     className="check-input"
                     name="q30"
                     inline
@@ -1636,7 +1661,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q31'] === 'Var'}
+                    defaultChecked={formik.values.q31 === 'Var'}
                     className="check-input"
                     name="q31"
                     inline
@@ -1646,7 +1671,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q31'] === 'Yok'}
+                    defaultChecked={formik.values.q31 === 'Yok'}
                     className="check-input"
                     name="q31"
                     inline
@@ -1664,7 +1689,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q32'] === 'Normal'}
+                    defaultChecked={formik.values.q32 === 'Normal'}
                     className="check-input"
                     name="q32"
                     inline
@@ -1674,7 +1699,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q32'] === 'Sakral Gamze'}
+                    defaultChecked={formik.values.q32 === 'Sakral Gamze'}
                     className="check-input"
                     name="q32"
                     inline
@@ -1683,7 +1708,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q32'] === 'Kıllanma Artışı'}
+                    defaultChecked={formik.values.q32 === 'Kıllanma Artışı'}
                     className="check-input"
                     name="q32"
                     inline
@@ -1692,7 +1717,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q32'] === 'Kitle'}
+                    defaultChecked={formik.values.q32 === 'Kitle'}
                     className="check-input"
                     name="q32"
                     inline
@@ -1709,7 +1734,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q33'] === 'Var'}
+                    defaultChecked={formik.values.q33 === 'Var'}
                     className="check-input"
                     name="q33"
                     inline
@@ -1719,7 +1744,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q33'] === 'Yok'}
+                    defaultChecked={formik.values.q33 === 'Yok'}
                     className="check-input"
                     name="q33"
                     inline
@@ -1737,7 +1762,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q34'] === 'Var'}
+                    defaultChecked={formik.values.q34 === 'Var'}
                     className="check-input"
                     name="q34"
                     inline
@@ -1747,7 +1772,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q34'] === 'Yok'}
+                    defaultChecked={formik.values.q34 === 'Yok'}
                     className="check-input"
                     name="q34"
                     inline
@@ -1771,7 +1796,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q35'] === 'Yapıldı'}
+                    defaultChecked={formik.values.q35 === 'Yapıldı'}
                     className="check-input"
                     name="q35"
                     inline
@@ -1781,7 +1806,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q35'] === 'Yapılmadı'}
+                    defaultChecked={formik.values.q35 === 'Yapılmadı'}
                     className="check-input"
                     name="q35"
                     inline
@@ -1801,7 +1826,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q36'] === 'Evet'}
+                    defaultChecked={formik.values.q36 === 'Evet'}
                     className="check-input"
                     name="q36"
                     inline
@@ -1811,7 +1836,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q36'] === 'Hayır'}
+                    defaultChecked={formik.values.q36 === 'Hayır'}
                     className="check-input"
                     name="q36"
                     inline
@@ -1829,7 +1854,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q37'] === 'Sert'}
+                    defaultChecked={formik.values.q37 === 'Sert'}
                     className="check-input"
                     name="q37"
                     inline
@@ -1838,7 +1863,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q37'] === 'Balçık'}
+                    defaultChecked={formik.values.q37 === 'Balçık'}
                     className="check-input"
                     name="q37"
                     inline
@@ -1847,7 +1872,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q37'] === 'Sulu'}
+                    defaultChecked={formik.values.q37 === 'Sulu'}
                     className="check-input"
                     name="q37"
                     inline
@@ -1864,7 +1889,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q38'] === 'Zayıf'}
+                    defaultChecked={formik.values.q38 === 'Zayıf'}
                     name="q38"
                     inline
                     type="radio"
@@ -1873,7 +1898,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q38'] === 'Güçlü'}
+                    defaultChecked={formik.values.q38 === 'Güçlü'}
                     name="q38"
                     inline
                     type="radio"
@@ -1882,9 +1907,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={
-                      formik.values['q38'] === 'Değerlendirilemedi'
-                    }
+                    defaultChecked={formik.values.q38 === 'Değerlendirilemedi'}
                     name="q38"
                     inline
                     type="radio"
@@ -1901,7 +1924,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q39'] === 'Azalıyor'}
+                    defaultChecked={formik.values.q39 === 'Azalıyor'}
                     className="check-input"
                     name="q39"
                     inline
@@ -1912,7 +1935,7 @@ export default function KabizlikInkotinansForm(props) {
                   <Form.Check
                     onChange={formik.handleChange}
                     defaultChecked={
-                      formik.values['q39'] === 'Artıyor (dissinerji?)'
+                      formik.values.q39 === 'Artıyor (dissinerji?)'
                     }
                     className="check-input"
                     name="q39"
@@ -1923,9 +1946,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={
-                      formik.values['q39'] === 'Değerlendirilemedi'
-                    }
+                    defaultChecked={formik.values.q39 === 'Değerlendirilemedi'}
                     className="check-input"
                     name="q39"
                     inline
@@ -1945,7 +1966,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q40'] === 'Zayıf'}
+                    defaultChecked={formik.values.q40 === 'Zayıf'}
                     className="check-input"
                     name="q40"
                     inline
@@ -1955,7 +1976,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q40'] === 'Güçlü'}
+                    defaultChecked={formik.values.q40 === 'Güçlü'}
                     className="check-input"
                     name="q40"
                     inline
@@ -1965,7 +1986,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q40'] === 'Hiç Kasamıyor'}
+                    defaultChecked={formik.values.q40 === 'Hiç Kasamıyor'}
                     className="check-input"
                     name="q40"
                     inline
@@ -1975,9 +1996,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={
-                      formik.values['q40'] === 'Değerlendirilemedi'
-                    }
+                    defaultChecked={formik.values.q40 === 'Değerlendirilemedi'}
                     className="check-input"
                     name="q40"
                     inline
@@ -1997,7 +2016,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q41'] === 'Var'}
+                    defaultChecked={formik.values.q41 === 'Var'}
                     className="check-input"
                     name="q41"
                     inline
@@ -2007,7 +2026,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q41'] === 'Yok'}
+                    defaultChecked={formik.values.q41 === 'Yok'}
                     className="check-input"
                     name="q41"
                     inline
@@ -2051,7 +2070,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q43'] === 'Anemi'}
+                    defaultChecked={formik.values.q43 === 'Anemi'}
                     className="check-input"
                     name="q43"
                     inline
@@ -2061,7 +2080,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q43'] === 'Hipotiroidi'}
+                    defaultChecked={formik.values.q43 === 'Hipotiroidi'}
                     className="check-input"
                     name="q43"
                     inline
@@ -2071,7 +2090,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q43'] === 'Hipokalemi'}
+                    defaultChecked={formik.values.q43 === 'Hipokalemi'}
                     className="check-input"
                     name="q43"
                     inline
@@ -2081,7 +2100,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q43'] === 'Diğer'}
+                    defaultChecked={formik.values.q43 === 'Diğer'}
                     className="check-input"
                     name="q43"
                     inline
@@ -2089,7 +2108,7 @@ export default function KabizlikInkotinansForm(props) {
                     label="Diğer"
                     value="Diğer"
                   />
-                  {formik.values.q43 == 'Diğer' && (
+                  {formik.values.q43 === 'Diğer' && (
                     <Form.Control
                       onChange={formik.handleChange}
                       value={formik.values['q43-comment']}
@@ -2103,6 +2122,18 @@ export default function KabizlikInkotinansForm(props) {
               </Form.Group>
             </Card.Body>
           </Card>
+          <Row>
+            <Col>
+              <Button
+                style={{ width: 250 }}
+                onClick={() => {
+                  setVisible2(true);
+                }}
+              >
+                Göster / Gizle
+              </Button>
+            </Col>
+          </Row>
           {/* Direkt Grafi */}
           <Card className="card">
             <Card.Body>
@@ -2112,6 +2143,7 @@ export default function KabizlikInkotinansForm(props) {
                 </Form.Label>
               </Col>
             </Card.Body>
+
             <Card.Body>
               {/* 44. Sakrum Gelişimi */}
               <Form.Group as={Row} className="align-items-center">
@@ -2121,7 +2153,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q44'] == 'Normal'}
+                    defaultChecked={formik.values.q44 === 'Normal'}
                     className="check-input"
                     name="q44"
                     inline
@@ -2131,7 +2163,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q44'] == 'Anormal'}
+                    defaultChecked={formik.values.q44 === 'Anormal'}
                     className="check-input"
                     name="q44"
                     inline
@@ -2139,7 +2171,7 @@ export default function KabizlikInkotinansForm(props) {
                     label="Anormal"
                     value="Anormal"
                   />
-                  {formik.values.q44 == 'Anormal' && (
+                  {formik.values.q44 === 'Anormal' && (
                     <Form.Control
                       onChange={formik.handleChange}
                       value={formik.values['q44-comment']}
@@ -2151,14 +2183,22 @@ export default function KabizlikInkotinansForm(props) {
                 </Col>
               </Form.Group>
               <Row>
-                <Col>
-                  <img
-                    src={require('/assets/q44.png')}
-                    alt="q44"
-                    height={250}
-                    className="mb-3"
-                  />
-                </Col>
+                <Dialog
+                  visible={visible2}
+                  style={{ width: '80vw' }}
+                  modal
+                  onHide={onHide2}
+                >
+                  {/* Bristol Dışkı Skalası Resim */}
+                  <Row>
+                    <img
+                      src={require('/assets/q44.png')}
+                      alt="q44"
+                      height={250}
+                      className="mb-3"
+                    />
+                  </Row>
+                </Dialog>
               </Row>
               {/* 45. Sakral Oran */}
               <Form.Group as={Row} className="align-items-center">
@@ -2168,7 +2208,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Control
                     onChange={formik.handleChange}
-                    value={formik.values['q45']}
+                    value={formik.values.q45}
                     size="sm"
                     className="text-input"
                     name="q45"
@@ -2184,7 +2224,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q46'] == 'Var'}
+                    defaultChecked={formik.values.q46 === 'Var'}
                     className="check-input"
                     name="q46"
                     inline
@@ -2194,7 +2234,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q46'] == 'Yok'}
+                    defaultChecked={formik.values.q46 === 'Yok'}
                     className="check-input"
                     name="q46"
                     inline
@@ -2212,7 +2252,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q47'] == 'Hafif'}
+                    defaultChecked={formik.values.q47 === 'Hafif'}
                     className="check-input"
                     name="q47"
                     inline
@@ -2222,7 +2262,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q47'] == 'Orta'}
+                    defaultChecked={formik.values.q47 === 'Orta'}
                     className="check-input"
                     name="q47"
                     inline
@@ -2232,7 +2272,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q47'] == 'Ağır'}
+                    defaultChecked={formik.values.q47 === 'Ağır'}
                     className="check-input"
                     name="q47"
                     inline
@@ -2250,7 +2290,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q48'] == 'Var'}
+                    defaultChecked={formik.values.q48 === 'Var'}
                     className="check-input"
                     name="q46"
                     inline
@@ -2260,7 +2300,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q48'] == 'Yok'}
+                    defaultChecked={formik.values.q48 === 'Yok'}
                     className="check-input"
                     name="q46"
                     inline
@@ -2293,21 +2333,23 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q50'] == 'Var'}
+                    defaultChecked={formik.values.q50 === 'Var'}
                     className="check-input"
                     name="q50"
                     inline
                     type="radio"
                     label="Var"
+                    value="Var"
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q50'] == 'Yok'}
+                    defaultChecked={formik.values.q50 === 'Yok'}
                     className="check-input"
                     name="q50"
                     inline
                     type="radio"
                     label="Yok"
+                    value="Yok"
                   />
                 </Col>
               </Form.Group>
@@ -2319,7 +2361,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q51'] == 'Var'}
+                    defaultChecked={formik.values.q51 === 'Var'}
                     className="check-input"
                     name="q51"
                     inline
@@ -2329,7 +2371,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q51'] == 'Yok'}
+                    defaultChecked={formik.values.q51 === 'Yok'}
                     className="check-input"
                     name="q51"
                     inline
@@ -2338,13 +2380,13 @@ export default function KabizlikInkotinansForm(props) {
                     value="Yok"
                   />
                 </Col>
-                {formik.values.q51 == 'Var' && (
+                {formik.values.q51 === 'Var' && (
                   <Row>
                     <Col md="auto" className="wrap-to-right">
                       <Form.Check
                         onChange={formik.handleChange}
                         defaultChecked={
-                          formik.values['q51-1'] == 'İzole Rektum'
+                          formik.values['q51-1'] === 'İzole Rektum'
                         }
                         className="check-input"
                         name="q51-1"
@@ -2356,7 +2398,7 @@ export default function KabizlikInkotinansForm(props) {
                       <Form.Check
                         onChange={formik.handleChange}
                         defaultChecked={
-                          formik.values['q51-1'] == 'Rektosigmoid'
+                          formik.values['q51-1'] === 'Rektosigmoid'
                         }
                         className="check-input"
                         name="q51-1"
@@ -2367,7 +2409,7 @@ export default function KabizlikInkotinansForm(props) {
                       />{' '}
                       <Form.Check
                         onChange={formik.handleChange}
-                        defaultChecked={formik.values['q51-1'] == 'Yaygın'}
+                        defaultChecked={formik.values['q51-1'] === 'Yaygın'}
                         className="check-input"
                         name="q51-1"
                         inline
@@ -2375,10 +2417,10 @@ export default function KabizlikInkotinansForm(props) {
                         label="Yaygın"
                         value="Yaygın"
                       />
-                      {formik.values['q51-1'] == 'Yok' && (
+                      {formik.values['q51-1'] === 'Yok' && (
                         <Form.Control
                           onChange={formik.handleChange}
-                          defaultChecked={formik.values['q51-1-comment']}
+                          value={formik.values['q51-1-comment']}
                           className="text-input"
                           name="q51-1-comment"
                           type="text"
@@ -2394,7 +2436,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="4">
                   <Form.Label>Rektopelvik oran</Form.Label>
                 </Col>
-                <Col md="3">
+                <Col md="6">
                   <InputGroup>
                     <Form.Control
                       onChange={formik.handleChange}
@@ -2402,6 +2444,7 @@ export default function KabizlikInkotinansForm(props) {
                       className="text-input"
                       name="q52-rektopelvik-oran"
                       type="text"
+                      style={{ maxWidth: 150 }}
                     />
                     <InputGroup.Text className="input-group-text">
                       &gt; 0,61 = Megarektum
@@ -2442,7 +2485,7 @@ export default function KabizlikInkotinansForm(props) {
                 <Col md="auto" className="align-items-center">
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q53'] === 'Yok'}
+                    defaultChecked={formik.values.q53 === 'Yok'}
                     className="check-input"
                     name="q53"
                     inline
@@ -2452,7 +2495,7 @@ export default function KabizlikInkotinansForm(props) {
                   />
                   <Form.Check
                     onChange={formik.handleChange}
-                    defaultChecked={formik.values['q53'] === 'Var'}
+                    defaultChecked={formik.values.q53 === 'Var'}
                     className="check-input"
                     name="q53"
                     inline
@@ -2460,7 +2503,7 @@ export default function KabizlikInkotinansForm(props) {
                     label="Var"
                     value="Var"
                   />
-                  {formik.values.q53 == 'Var' && (
+                  {formik.values.q53 === 'Var' && (
                     <Form.Control
                       onChange={formik.handleChange}
                       value={formik.values['q53-comment']}
@@ -2481,7 +2524,7 @@ export default function KabizlikInkotinansForm(props) {
                   <InputGroup>
                     <Form.Control
                       onChange={formik.handleChange}
-                      value={formik.values['q54']}
+                      value={formik.values.q54}
                       className="text-input"
                       name="q54"
                       type="text"
@@ -2519,6 +2562,7 @@ export default function KabizlikInkotinansForm(props) {
               </Form.Group>
             </Card.Body>
           </Card>
+          <ButtonBar url="/patients" />
         </Form>
       </Container>
     </div>

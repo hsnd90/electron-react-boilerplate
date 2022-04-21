@@ -1,4 +1,16 @@
-@import url("https://unpkg.com/primeicons/primeicons.css");
-@import url("https://unpkg.com/primereact/resources/themes/lara-light-indigo/theme.css");
-@import url("https://unpkg.com/primereact/resources/primereact.min.css");
-@import url("https://unpkg.com/primeflex@3.1.2/primeflex.min.css");
+@import url('https://unpkg.com/primeicons/primeicons.css');
+@import url('https://unpkg.com/primereact/resources/themes/lara-light-indigo/theme.css');
+@import url('https://unpkg.com/primereact/resources/primereact.min.css');
+@import url('https://unpkg.com/primeflex@3.1.2/primeflex.min.css');
+
+.p-dialog-header {
+  margin: 0 !important;
+}
+
+.p-dialog-content {
+  margin: 0 !important;
+}
+
+.search-input{
+  color: black !important;
+}
